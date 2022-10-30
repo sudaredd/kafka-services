@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ProducerApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <option name="ACTIVE_PROFILES" />
+    <module name="producer" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.example.producer.ProducerApplication" />
+    <option name="VM_PARAMETERS" value="-DTOPIC=price_feed" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
