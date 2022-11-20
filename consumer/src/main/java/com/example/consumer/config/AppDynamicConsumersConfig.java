@@ -8,18 +8,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.event.ListenerContainerIdleEvent;
 import org.springframework.kafka.listener.AbstractMessageListenerContainer;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
-import org.springframework.kafka.listener.MessageListener;
 import org.springframework.kafka.support.TopicPartitionOffset;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.IntStream;
 
 @Configuration
 public class AppDynamicConsumersConfig {
@@ -29,13 +28,11 @@ public class AppDynamicConsumersConfig {
 
     @Bean
     public ApplicationRunner runner(DynamicListener listener, KafkaTemplate<String, String> template,
-                                    @Value("${TOPICS}") String topicsInput) {
+                                    @Value("${TOPICS}") String topicsInput, KafkaListenerEndpointRegistry registry) {
         return args -> {
             String topics[] = topicsInput.split(",");
             for (String topic : topics) {
-                logger.info("Hit enter to start a listener for topic {}", topic);
-                System.in.read();
-                listener.newContainer(topic);
+                listener.newContainer(topic, registry);
             }
         };
     }
@@ -54,18 +51,23 @@ public class AppDynamicConsumersConfig {
             this.factory = factory;
         }
 
-        void newContainer(String topic) {
+        void newContainer(String topic, KafkaListenerEndpointRegistry registry) {
             ConcurrentMessageListenerContainer<String, String> container =
                 this.factory.createContainer(topic);
-            startContainer(container);
+            startContainer(container, registry);
         }
 
-        private void startContainer(ConcurrentMessageListenerContainer<String, String> container) {
+        private void startContainer(ConcurrentMessageListenerContainer<String, String> container,
+                                    KafkaListenerEndpointRegistry registry) {
             String groupId = UUID.randomUUID().toString();
             container.getContainerProperties().setGroupId(groupId);
-            container.setupMessageListener((MessageListener) record -> {
-                LOG.info("record {}", record);
-            });
+/*            container.setupMessageListener((MessageListener) (record) -> {
+                LOG.info("record {} headers {}", record.value(), record.headers());
+            });*/
+
+            container.getContainerProperties().setMessageListener(
+                registry.getListenerContainer("byConsumer").getContainerProperties().getMessageListener());
+
             this.containers.put(groupId, container);
             container.start();
         }
@@ -73,7 +75,7 @@ public class AppDynamicConsumersConfig {
         void newContainer(String topic, int partition) {
             ConcurrentMessageListenerContainer<String, String> container =
                 this.factory.createContainer(new TopicPartitionOffset(topic, partition));
-            startContainer(container);
+            startContainer(container, null);
         }
 
         @EventListener

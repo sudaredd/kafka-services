@@ -19,7 +19,7 @@ public class BhsMessageConsumer {
         log.info("headers partition {}, topic {}, timestamp {}", partition, topic, ts);
     }
 
-    @KafkaListener(topics = "${TOPIC:transactions}", groupId = "byConsumer")
+    @KafkaListener(id = "byConsumer", topics = "${TOPIC:transactions}", groupId = "byConsumer")
     void listenMsg(@Payload String payload,  @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition,
                 @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
                 @Header(KafkaHeaders.RECEIVED_TIMESTAMP) long ts) {
