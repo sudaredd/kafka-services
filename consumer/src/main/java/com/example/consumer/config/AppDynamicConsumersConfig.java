@@ -13,7 +13,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.event.ListenerContainerIdleEvent;
 import org.springframework.kafka.listener.AbstractMessageListenerContainer;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
-import org.springframework.kafka.support.TopicPartitionOffset;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -54,13 +53,15 @@ public class AppDynamicConsumersConfig {
         void newContainer(String topic, KafkaListenerEndpointRegistry registry) {
             ConcurrentMessageListenerContainer<String, String> container =
                 this.factory.createContainer(topic);
-            startContainer(container, registry);
+            startContainer(container, registry, topic);
         }
 
         private void startContainer(ConcurrentMessageListenerContainer<String, String> container,
-                                    KafkaListenerEndpointRegistry registry) {
+                                    KafkaListenerEndpointRegistry registry, String topic) {
             String groupId = UUID.randomUUID().toString();
             container.getContainerProperties().setGroupId(groupId);
+           container.setBeanName(topic);
+
 /*            container.setupMessageListener((MessageListener) (record) -> {
                 LOG.info("record {} headers {}", record.value(), record.headers());
             });*/
@@ -71,13 +72,6 @@ public class AppDynamicConsumersConfig {
             this.containers.put(groupId, container);
             container.start();
         }
-
-        void newContainer(String topic, int partition) {
-            ConcurrentMessageListenerContainer<String, String> container =
-                this.factory.createContainer(new TopicPartitionOffset(topic, partition));
-            startContainer(container, null);
-        }
-
         @EventListener
         public void idle(ListenerContainerIdleEvent event) {
             AbstractMessageListenerContainer<String, String> container = this.containers.remove(
