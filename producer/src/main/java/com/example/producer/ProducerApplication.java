@@ -29,7 +29,7 @@ public class ProducerApplication {
 
         @Override
         public void run(String... args) throws Exception {
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < 10; i++) {
                 producer.sendMessage(String.format("Message %s", i), i % 3);
             }
         }
@@ -40,10 +40,24 @@ public class ProducerApplication {
         @Autowired
         private KafkaTemplate kafkaTemplate;
 
-        @Value("${TOPIC}")
+        @Value("${TOPIC:}")
         private String topic;
 
+        @Value("${TOPICS:}")
+        private String topics;
+
         public void sendMessage(String payload, int partitionId) {
+            if(!topics.isEmpty()) {
+                for (String topic : topics.split(",")) {
+                    sendMsg(payload, partitionId, topic);
+                }
+            }
+            if (!topic.isEmpty()) {
+                sendMsg(payload, partitionId, topic);
+            }
+        }
+
+        private void sendMsg(String payload, int partitionId, String topic) {
             Message<String> message = MessageBuilder
                 .withPayload(payload)
                 .setHeader(KafkaHeaders.PARTITION_ID, partitionId)

@@ -26,17 +26,19 @@ public class AppConfig {
                                   Environment environment, KafkaProperties kafkaProperties) {
         return args -> {
 //            kafkaProperties.setBootstrapServers(List.of("localhost:9090"));
-            factory.getConsumerFactory().updateConfigs(Map.of(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                "localhost:9092"));
-            factory.setBatchListener(true);
-            int partition = Integer.parseInt(Objects.requireNonNull(environment.getProperty("PARTITION")));
             String topic = environment.getProperty("TOPIC");
-            ConcurrentMessageListenerContainer<String, String> container1 =
-                factory.createContainer(new TopicPartitionOffset(topic, partition, END));
-            container1.getContainerProperties().setMessageListener(
-                registry.getListenerContainer("byPartitionId").getContainerProperties().getMessageListener());
-            container1.getContainerProperties().setGroupId("topic1-0-group2");
-            container1.start();
+            if (topic != null) {
+                factory.getConsumerFactory().updateConfigs(Map.of(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                    "localhost:9092"));
+                factory.setBatchListener(true);
+                int partition = Integer.parseInt(Objects.requireNonNull(environment.getProperty("PARTITION")));
+                ConcurrentMessageListenerContainer<String, String> container1 =
+                    factory.createContainer(new TopicPartitionOffset(topic, partition, END));
+                container1.getContainerProperties().setMessageListener(
+                    registry.getListenerContainer("byPartitionId").getContainerProperties().getMessageListener());
+                container1.getContainerProperties().setGroupId("topic1-0-group2");
+                container1.start();
+            }
         };
     }
 
